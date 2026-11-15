@@ -1,0 +1,135 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to get user role from users collection
+    // Returns null if user document doesn't exist
+    function getUserRole() {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc != null && userDoc.data != null ? userDoc.data.role : null;
+    }
+    
+    // Helper function to check if user is employee
+    function isEmployee() {
+      return getUserRole() == 'employee';
+    }
+    
+    // Helper function to check if user is manager
+    function isManager() {
+      return getUserRole() == 'manager';
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return getUserRole() == 'admin';
+    }
+
+    // Helper function to check if user is superadmin
+    function isSuperAdmin() {
+      return getUserRole() == 'superadmin';
+    }
+
+    // Helper function to check if user is manager or admin
+    function isManagerOrAdmin() {
+      return isManager() || isAdmin();
+    }
+    
+    // Helper function to check if task is assigned to current user
+    function isTaskAssignedToUser() {
+      return resource.data.assignedToEmail == request.auth.token.email ||
+             resource.data.assignedToEmail == 'all';
+    }
+    
+    // Tasks collection rules
+    match /tasks/{taskId} {
+      // Allow read if:
+      // - User is admin, manager (can read all)
+      // - Employee can read tasks assigned to them or to 'all'
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        isManager() ||
+        (isEmployee() && isTaskAssignedToUser())
+      );
+      
+      // Allow create if user is manager or admin
+      allow create: if request.auth != null && isManagerOrAdmin();
+      
+      // Allow update:
+      // - Managers/Admins can update any task and any field
+      // - Employees can only update status and completed fields for tasks assigned to them
+      // - Also allow if task is assigned to user's email (fallback if role check fails)
+      allow update: if request.auth != null && (
+        // Managers and admins can update any field
+        (isManagerOrAdmin()) ||
+        // Employees can only update status and completed for their assigned tasks
+        (isEmployee() && 
+         isTaskAssignedToUser() &&
+         // Only allow updating status and completed fields
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completed']) &&
+         // Ensure other fields remain unchanged
+         request.resource.data.title == resource.data.title &&
+         request.resource.data.description == resource.data.description &&
+         request.resource.data.assignedToEmail == resource.data.assignedToEmail &&
+         request.resource.data.createdByName == resource.data.createdByName &&
+         request.resource.data.createdAt == resource.data.createdAt &&
+         (request.resource.data.dueDate == resource.data.dueDate || 
+          (request.resource.data.dueDate == null && resource.data.dueDate == null))) ||
+        // Fallback: Allow any authenticated user to update status/completed if task is assigned to them
+        // This works even if role check fails (e.g., user document doesn't exist or can't be read)
+        (isTaskAssignedToUser() &&
+         // Only allow updating status and completed fields
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completed']) &&
+         // Ensure other fields remain unchanged
+         request.resource.data.title == resource.data.title &&
+         request.resource.data.description == resource.data.description &&
+         request.resource.data.assignedToEmail == resource.data.assignedToEmail &&
+         request.resource.data.createdByName == resource.data.createdByName &&
+         request.resource.data.createdAt == resource.data.createdAt &&
+         (request.resource.data.dueDate == resource.data.dueDate || 
+          (request.resource.data.dueDate == null && resource.data.dueDate == null)))
+      );
+      
+      // Allow delete only for managers and admins
+      allow delete: if request.auth != null && isManagerOrAdmin();
+    }
+    
+    // Users collection rules
+    match /users/{userId} {
+      // Users can read their own data (needed for role checks in other rules)
+      // Admins and superadmins can read all
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        isAdmin() ||
+        isSuperAdmin()
+      );
+
+      // Admins and superadmins can create/update/delete users
+      allow create, update, delete: if request.auth != null && (isAdmin() || isSuperAdmin());
+    }
+    
+    // Products collection rules
+    match /products/{productId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && isManagerOrAdmin();
+    }
+    
+    // Categories collection rules
+    match /categories/{categoryId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && isManagerOrAdmin();
+    }
+    
+    // Suppliers collection rules
+    match /suppliers/{supplierId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && isManagerOrAdmin();
+    }
+    
+    // Default: deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
