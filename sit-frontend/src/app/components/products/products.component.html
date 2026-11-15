@@ -1,0 +1,103 @@
+<div class="container mt-4">
+
+  <div class="top-bar">
+    <input
+      type="text"
+      placeholder="Search products..."
+      class="search-bar"
+      [(ngModel)]="searchTerm"
+      (input)="applyFilter()"
+    >
+
+    <button
+      *ngIf="role === 'admin'"
+      class="btn-add"
+      (click)="openAddProduct()">
+      <i class="bi bi-person-plus-fill"></i> Add Product
+    </button>
+  </div>
+
+  <!-- Product Form Modal -->
+  <app-product-form
+    *ngIf="showModal"
+    [mode]="mode"
+    [productData]="selectedProduct"
+    (formSubmit)="handleFormSubmit($event)"
+    (formCancel)="closeModal()">
+  </app-product-form>
+
+  <div class="modal-backdrop fade show" *ngIf="showModal"></div>
+
+  <!-- FINAL PERFECT TABLE -->
+  <table class="styled-table">
+    <thead>
+      <tr>
+        <th style="width: 60px;">ID</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Supplier</th>
+        <th>Cost</th>
+        <th>Selling</th>
+        <th>Stock</th>
+        <th>Expiry</th>
+        <th>Status</th>
+        <th *ngIf="role === 'admin'" class="actions-header">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let product of filteredProducts; let i = index">
+        <td class="id-cell">{{ i + 1 }}</td>
+
+        <!-- NAME + DESCRIPTION -->
+        <td class="name-col">
+          <strong>{{ product.name }}</strong>
+          <div class="desc">{{ product.description }}</div>
+        </td>
+
+        <td>{{ product.categoryName }}</td>
+        <td>{{ product.supplierName }}</td>
+        <td>{{ product.price | currency }}</td>
+        <td>{{ product.sellingPrice | currency }}</td>
+
+        <td>{{ product.stockQuantity }}</td>
+
+        <td>
+          <div *ngIf="product.expiryDate; else noDate">
+            <span *ngIf="isExpired(product)" class="badge badge-expired">Expired</span>
+            <span *ngIf="!isExpired(product)">{{ product.expiryDate | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <ng-template #noDate>—</ng-template>
+        </td>
+
+        <td>
+          <span class="badge"
+            [class.badge-critical]="getStockStatus(product)==='critical'"
+            [class.badge-low]="getStockStatus(product)==='low'"
+            [class.badge-ok]="getStockStatus(product)==='ok'">
+
+            {{ getStockStatus(product) | uppercase }}
+          </span>
+        </td>
+
+        <td *ngIf="role === 'admin'" class="action-col">
+
+          <span
+            class="icon-wrapper"
+            (click)="editProduct(product)"
+          >
+            <i class="bi bi-pencil-square edit-icon"></i>
+            <span class="tooltip">Edit</span>
+          </span>
+
+          <span class="icon-wrapper" (click)="deleteProduct(product.id)">
+            <i class="bi bi-trash-fill delete-icon"></i>
+            <span class="tooltip">Delete</span>
+          </span>
+
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>

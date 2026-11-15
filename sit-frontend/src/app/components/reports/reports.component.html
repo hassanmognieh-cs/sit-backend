@@ -1,0 +1,229 @@
+<div class="reports-container">
+  
+  <!-- Loading Indicator -->
+  <div *ngIf="loading" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p>Loading reports...</p>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon revenue">
+        <i class="bi bi-currency-dollar"></i>
+      </div>
+      <div class="kpi-content">
+        <h3 class="kpi-title">Total Revenue</h3>
+        <p class="kpi-value">{{ totalRevenue | number:'1.2-2' }}</p>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon cost">
+        <i class="bi bi-cash-stack"></i>
+      </div>
+      <div class="kpi-content">
+        <h3 class="kpi-title">Total Cost</h3>
+        <p class="kpi-value">{{ totalCost | number:'1.2-2' }}</p>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon profit">
+        <i class="bi bi-graph-up-arrow"></i>
+      </div>
+      <div class="kpi-content">
+        <h3 class="kpi-title">Net Profit</h3>
+        <p class="kpi-value" [class.negative]="netProfit < 0">{{ netProfit | number:'1.2-2' }}</p>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon inventory">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="kpi-content">
+        <h3 class="kpi-title">Inventory Value</h3>
+        <p class="kpi-value">{{ inventoryValue | number:'1.2-2' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Charts Row -->
+  <div class="main-charts-row">
+    <!-- Chart 1: Revenue vs Cost -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h2 class="chart-title">Revenue vs Cost</h2>
+        <select class="metric-select" [(ngModel)]="chart1Metric" (change)="onChart1MetricChange()">
+          <option value="revenue-cost">Revenue vs Cost</option>
+          <option value="revenue-profit">Revenue vs Profit</option>
+          <option value="cost-profit">Cost vs Profit</option>
+        </select>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="revenueCostChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart 2: Top Products -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h2 class="chart-title">Top Products</h2>
+        <select class="metric-select" [(ngModel)]="chart2Metric" (change)="onChart2MetricChange()">
+          <option value="profit">Profit</option>
+          <option value="revenue">Revenue</option>
+          <option value="cost">Cost</option>
+          <option value="quantity">Quantity</option>
+        </select>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="profitByProductChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Forecast Panel -->
+  <div class="forecast-panel">
+    <div class="forecast-header">
+      <div>
+        <h2 class="chart-title">
+          <i class="bi bi-robot"></i> AI Forecast & Predictions
+        </h2>
+        <p class="forecast-subtitle">Predictive analytics for future sales and inventory management</p>
+      </div>
+      <button class="btn-forecast-toggle" (click)="toggleForecast()">
+        <i class="bi" [class.bi-chevron-down]="!showForecast" [class.bi-chevron-up]="showForecast"></i>
+        {{ showForecast ? 'Hide Predictions' : 'Show Predictions' }}
+      </button>
+    </div>
+
+    <div class="forecast-content" *ngIf="showForecast">
+      
+      <!-- Next Month Forecast KPIs -->
+      <div class="forecast-kpi-grid">
+        <div class="forecast-kpi-card">
+          <div class="forecast-kpi-icon revenue">
+            <i class="bi bi-currency-dollar"></i>
+          </div>
+          <div class="forecast-kpi-content">
+            <h3 class="forecast-kpi-label">Next Month Revenue</h3>
+            <p class="forecast-kpi-value">${{ forecastData.nextMonthRevenue | number:'1.2-2' }}</p>
+          </div>
+        </div>
+
+        <div class="forecast-kpi-card">
+          <div class="forecast-kpi-icon cost">
+            <i class="bi bi-cash-stack"></i>
+          </div>
+          <div class="forecast-kpi-content">
+            <h3 class="forecast-kpi-label">Next Month Cost</h3>
+            <p class="forecast-kpi-value">${{ forecastData.nextMonthCost | number:'1.2-2' }}</p>
+          </div>
+        </div>
+
+        <div class="forecast-kpi-card">
+          <div class="forecast-kpi-icon profit">
+            <i class="bi bi-graph-up-arrow"></i>
+          </div>
+          <div class="forecast-kpi-content">
+            <h3 class="forecast-kpi-label">Next Month Profit</h3>
+            <p class="forecast-kpi-value" [class.negative]="forecastData.nextMonthProfit < 0">
+              ${{ forecastData.nextMonthProfit | number:'1.2-2' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 30-Day Forecast Chart -->
+      <div class="chart-card">
+        <h2 class="chart-title">30-Day Sales Forecast</h2>
+        <div class="chart-wrapper">
+          <canvas id="forecastChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Restock Recommendations -->
+      <div class="forecast-section">
+        <h2 class="chart-title">Recommended Restock</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Current Stock</th>
+                <th>Avg Daily Sales</th>
+                <th>30-Day Forecast</th>
+                <th>Recommended</th>
+                <th>Restock Qty</th>
+                <th>Priority</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let rec of forecastData.restockRecommendations">
+                <td><strong>{{ rec.productName }}</strong></td>
+                <td>{{ rec.currentStock }}</td>
+                <td>{{ rec.avgDailySales | number:'1.1-1' }}</td>
+                <td>{{ rec.forecasted30DaySales | number:'1.0-0' }}</td>
+                <td>{{ rec.recommendedStock | number:'1.0-0' }}</td>
+                <td><strong>{{ rec.restockNeeded | number:'1.0-0' }}</strong></td>
+                <td>
+                  <span class="badge" [ngClass]="getPriorityBadgeClass(rec.priority)">
+                    {{ rec.priority }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="forecastData.restockRecommendations.length === 0">
+                <td colspan="7" class="no-data">No restock recommendations at this time</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Products at Risk -->
+      <div class="forecast-section">
+        <h2 class="chart-title">Products at Risk</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Current Stock</th>
+                <th>Threshold</th>
+                <th>Avg Daily Demand</th>
+                <th>Days Until Stockout</th>
+                <th>Risk Level</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let product of forecastData.productsAtRisk">
+                <td><strong>{{ product.productName }}</strong></td>
+                <td>{{ product.currentStock }}</td>
+                <td>{{ product.threshold }}</td>
+                <td>{{ product.avgDailyDemand | number:'1.1-1' }}</td>
+                <td>
+                  <span *ngIf="product.daysUntilStockout < 999">
+                    {{ product.daysUntilStockout | number:'1.1-1' }} days
+                  </span>
+                  <span *ngIf="product.daysUntilStockout >= 999">—</span>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getRiskBadgeClass(product.riskLevel)">
+                    {{ product.riskLevel }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="forecastData.productsAtRisk.length === 0">
+                <td colspan="6" class="no-data">No products at risk</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+</div>

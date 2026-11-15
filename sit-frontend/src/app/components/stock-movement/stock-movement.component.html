@@ -1,0 +1,220 @@
+<!-- ===== PHASE 1: Landing State ===== -->
+<div class="landing-state" *ngIf="!selectedIntent">
+  <p class="landing-title">What do you want to do?</p>
+  <div class="intent-grid">
+    <div class="intent-card card-delivery" (click)="selectIntent('delivery', 'IN', 'restock')">
+      <i class="bi bi-truck intent-icon"></i>
+      <span class="intent-label">Stock Delivery</span>
+      <span class="intent-sub">Receive new inventory</span>
+    </div>
+    <div class="intent-card card-sale" (click)="selectIntent('sale', 'OUT', 'sale')">
+      <i class="bi bi-cart3 intent-icon"></i>
+      <span class="intent-label">Sale / Dispatch</span>
+      <span class="intent-sub">Sell or ship out items</span>
+    </div>
+    <div class="intent-card card-waste" (click)="selectIntent('waste', 'OUT', 'damage')">
+      <i class="bi bi-trash3 intent-icon"></i>
+      <span class="intent-label">Waste / Damage</span>
+      <span class="intent-sub">Write off damaged goods</span>
+    </div>
+    <div class="intent-card card-correction" (click)="selectIntent('correction', 'IN', 'adjustment')">
+      <i class="bi bi-sliders intent-icon"></i>
+      <span class="intent-label">Correction</span>
+      <span class="intent-sub">Adjust stock count</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PHASE 2: Working State ===== -->
+<div class="working-state" *ngIf="selectedIntent">
+
+  <!-- Error -->
+  <div *ngIf="errorMessage" class="sm-error">
+    <i class="bi bi-exclamation-circle"></i>
+    <span>{{ errorMessage }}</span>
+    <button class="sm-error-close" (click)="errorMessage = ''"><i class="bi bi-x"></i></button>
+  </div>
+
+  <!-- Intent Header Strip -->
+  <div class="intent-header" [ngClass]="'intent-header-' + selectedIntent">
+    <div class="intent-header-left">
+      <i [ngClass]="{
+        'bi bi-truck': selectedIntent === 'delivery',
+        'bi bi-cart3': selectedIntent === 'sale',
+        'bi bi-trash3': selectedIntent === 'waste',
+        'bi bi-sliders': selectedIntent === 'correction'
+      }"></i>
+      <span class="intent-header-label">
+        <ng-container [ngSwitch]="selectedIntent">
+          <ng-container *ngSwitchCase="'delivery'">Stock Delivery</ng-container>
+          <ng-container *ngSwitchCase="'sale'">Sale / Dispatch</ng-container>
+          <ng-container *ngSwitchCase="'waste'">Waste / Damage</ng-container>
+          <ng-container *ngSwitchCase="'correction'">Correction</ng-container>
+        </ng-container>
+      </span>
+      <span class="intent-header-sub">
+        <ng-container [ngSwitch]="selectedIntent">
+          <ng-container *ngSwitchCase="'delivery'">· Receive new inventory</ng-container>
+          <ng-container *ngSwitchCase="'sale'">· Sell or ship out items</ng-container>
+          <ng-container *ngSwitchCase="'waste'">· Write off damaged goods</ng-container>
+          <ng-container *ngSwitchCase="'correction'">· Adjust stock count</ng-container>
+        </ng-container>
+      </span>
+    </div>
+    <button class="change-btn" (click)="movementItems.length > 0 ? clearMovement() : resetIntent()">
+      <i class="bi bi-arrow-left"></i>
+      Change
+    </button>
+  </div>
+
+  <!-- Correction direction toggle -->
+  <div class="correction-toggle" *ngIf="selectedIntent === 'correction' && !typeLocked">
+    <span class="correction-label">Direction:</span>
+    <button class="corr-btn" [class.corr-active]="type === 'IN'" (click)="selectType('IN')">
+      <i class="bi bi-arrow-down-circle"></i> Add Stock
+    </button>
+    <button class="corr-btn" [class.corr-active]="type === 'OUT'" (click)="selectType('OUT')">
+      <i class="bi bi-arrow-up-circle"></i> Remove Stock
+    </button>
+  </div>
+
+  <!-- Add Products Section -->
+  <div class="add-products-section">
+    <div class="section-title">Add Products</div>
+
+    <!-- Search -->
+    <div class="search-row">
+      <input
+        class="sm-input"
+        type="text"
+        [(ngModel)]="searchText"
+        (input)="filterProducts()"
+        placeholder="Search products...">
+      <button
+        *ngIf="products.length > 0"
+        class="view-all-btn"
+        (click)="toggleViewAllProducts()">
+        <i class="bi" [class.bi-list-ul]="!showAllProducts" [class.bi-chevron-up]="showAllProducts"></i>
+        {{ showAllProducts ? 'Collapse' : 'View All' }}
+      </button>
+    </div>
+
+    <!-- Dropdown -->
+    <ul class="sm-dropdown" *ngIf="filteredProducts.length > 0" [class.show-all]="showAllProducts">
+      <li *ngFor="let p of filteredProducts"
+        class="sm-dropdown-item"
+        [class.active]="selectedProduct?.id === p.id"
+        (click)="selectProduct(p)">
+        <strong>{{ p.name }}</strong>
+        <span class="dd-stock">{{ p.stockQuantity }} in stock</span>
+      </li>
+    </ul>
+    <div *ngIf="filteredProducts.length === 0 && searchText && !showAllProducts" class="sm-no-results">
+      No products matching "{{ searchText }}"
+    </div>
+
+    <!-- Selected product health bar -->
+    <div class="product-health-bar" *ngIf="selectedProduct">
+      <span class="health-label">Selected:</span>
+      <strong class="health-name">{{ selectedProduct.name }}</strong>
+      <span class="health-sep"></span>
+      <span class="health-label">Stock:</span>
+      <span class="health-val" [ngClass]="{
+        'health-ok': selectedProduct.stockQuantity > selectedProduct.threshold,
+        'health-warn': selectedProduct.stockQuantity <= selectedProduct.threshold && selectedProduct.stockQuantity > 0,
+        'health-critical': selectedProduct.stockQuantity === 0
+      }">{{ selectedProduct.stockQuantity }}</span>
+      <span class="health-label">Threshold:</span>
+      <span class="health-val">{{ selectedProduct.threshold }}</span>
+    </div>
+
+    <!-- Quantity + Add -->
+    <div class="qty-row" *ngIf="selectedProduct">
+      <div class="qty-field">
+        <label class="sm-label">Quantity</label>
+        <input type="number" class="sm-input sm-qty"
+          [(ngModel)]="quantity"
+          (blur)="validateQuantity()"
+          (input)="validateQuantity()"
+          [min]="minQuantity">
+      </div>
+      <button class="add-item-btn"
+        [disabled]="!quantity || quantity < 1"
+        (click)="addItem()">
+        <i class="bi bi-plus-lg"></i> Add
+      </button>
+    </div>
+
+    <!-- Stock warning -->
+    <div class="stock-warning"
+      *ngIf="type === 'OUT' && selectedProduct && quantity > 0 && (selectedProduct.stockQuantity - quantity) <= selectedProduct.threshold">
+      <i class="bi bi-exclamation-triangle"></i>
+      This will bring {{ selectedProduct.name }} to
+      {{ selectedProduct.stockQuantity - quantity }} units
+      {{ (selectedProduct.stockQuantity - quantity) <= 0 ? '— OUT OF STOCK' : '(below threshold)' }}
+    </div>
+  </div>
+
+  <!-- Items Table -->
+  <div class="items-section" *ngIf="movementItems.length > 0">
+    <div class="section-title">
+      Items Added
+      <span class="items-count">{{ movementItems.length }}</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Quantity</th>
+          <th>Current Stock</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of movementItems; let i = index">
+          <td><strong>{{ item.product.name }}</strong></td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.product.stockQuantity }}</td>
+          <td>
+            <button class="remove-btn" (click)="removeItem(i)" title="Remove">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-section" *ngIf="movementItems.length > 0">
+    <div class="section-title">Movement Summary</div>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="s-label">Type</div>
+        <div class="s-val" [class.type-in]="type === 'IN'" [class.type-out]="type === 'OUT'">{{ type }}</div>
+      </div>
+      <div class="summary-item">
+        <div class="s-label">Reason</div>
+        <div class="s-val">{{ reason }}</div>
+      </div>
+      <div class="summary-item">
+        <div class="s-label">Products</div>
+        <div class="s-val">{{ movementItems.length }}</div>
+      </div>
+      <div class="summary-item">
+        <div class="s-label">Total Qty</div>
+        <div class="s-val">{{ getTotalQuantity() }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div class="submit-row" *ngIf="movementItems.length > 0">
+    <button class="submit-btn"
+      [disabled]="movementItems.length === 0 || !reason"
+      (click)="submitMovement()">
+      <i class="bi bi-check-circle"></i> Submit Movement
+    </button>
+  </div>
+
+</div>

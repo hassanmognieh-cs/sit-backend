@@ -1,0 +1,113 @@
+<!-- src/app/components/history/history.component.html -->
+
+<div class="container mt-4">
+
+  <!-- Top Controls -->
+  <div class="history-controls mb-3">
+    <div class="controls-left">
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Search by name"
+        [(ngModel)]="searchText"
+        (input)="filterHistory()">
+    </div>
+    <div class="controls-right">
+      <!-- Date Filter -->
+      <div class="filter-group">
+        <label class="filter-label">
+          <i class="bi bi-calendar3"></i> Date
+        </label>
+        <div class="filter-input-wrapper">
+          <input
+            type="date"
+            class="form-control form-control-sm date-filter"
+            [(ngModel)]="selectedDate"
+            (change)="onDateChange()">
+          <button 
+            *ngIf="selectedDate" 
+            class="btn btn-sm btn-outline-secondary clear-filter-btn"
+            (click)="clearDateFilter()"
+            title="Clear date filter">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Type Filter (IN/OUT) -->
+      <div class="filter-group">
+        <label class="filter-label">
+          <i class="bi bi-arrow-left-right"></i> Type
+        </label>
+        <select 
+          class="form-select form-select-sm type-filter" 
+          [(ngModel)]="selectedType" 
+          (change)="onTypeChange()">
+          <option value="all">All</option>
+          <option value="IN">IN</option>
+          <option value="OUT">OUT</option>
+        </select>
+      </div>
+
+      <!-- Sort Order -->
+      <div class="filter-group">
+        <label class="filter-label">
+          <i class="bi bi-sort-down"></i> Sort
+        </label>
+        <select class="form-select form-select-sm sort-select" [(ngModel)]="sortOrder" (change)="onSortChange()">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary btn-sm export-btn" (click)="exportToPDF()">
+        <i class="bi bi-file-pdf"></i> Export PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <table class="table table-bordered table-hover" *ngIf="filteredLogs.length > 0">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Product</th>
+        <th>Type</th>
+        <th>Qty</th>
+        <th>Cost Per Item</th>
+        <th>Total Cost</th>
+        <th>Total Revenue</th>
+        <th>Profit</th>
+        <th>Reason</th>
+        <th>User</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let log of filteredLogs">
+        <td>{{ log.createdAt ? (log.createdAt | date:'dd/MM/yyyy') : '—' }}</td>
+        <td>{{ log.createdAt ? (log.createdAt | date:'HH:mm') : '—' }}</td>
+        <td>{{ log.productName }}</td>
+        <td>
+          <span class="badge bg-success" *ngIf="log.type === 'IN'">IN</span>
+          <span class="badge bg-danger" *ngIf="log.type === 'OUT'">OUT</span>
+        </td>
+        <td>{{ log.quantity }}</td>
+        <td>{{ log.costPerItem != null ? (log.costPerItem | currency:'USD':'symbol':'1.2-2') : '—' }}</td>
+        <td>{{ log.totalCost != null ? (log.totalCost | currency:'USD':'symbol':'1.2-2') : '—' }}</td>
+        <td>{{ log.totalRevenue != null ? (log.totalRevenue | currency:'USD':'symbol':'1.2-2') : '—' }}</td>
+        <td>{{ log.profit != null ? (log.profit | currency:'USD':'symbol':'1.2-2') : '—' }}</td>
+        <td>{{ log.reason }}</td>
+        <td>{{ log.createdBy }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="alert alert-info" *ngIf="filteredLogs.length === 0 && !errorMessage">
+    No movements recorded for {{ currentMonthLabel }} yet.
+  </div>
+
+</div>

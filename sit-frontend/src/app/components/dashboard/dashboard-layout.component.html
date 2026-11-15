@@ -1,0 +1,110 @@
+<div class="dashboard-content">
+
+  <!-- Fixed Sidebar -->
+  <div class="sidebar">
+    <div class="app-title">
+      <div class="logo-icon">
+        <i class="bi bi-boxes"></i>
+      </div>
+      <span>Smart Inventory</span>
+    </div>
+
+    <nav class="nav-menu">
+
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        <i class="bi bi-speedometer2"></i>
+        Dashboard
+      </a>
+
+      <a *ngIf="role === 'admin' || role === 'superadmin' || role === 'manager' || role === 'employee'" routerLink="/dashboard/products" routerLinkActive="active">
+        <i class="bi bi-box-seam"></i>
+        Products
+      </a>
+
+      <a *ngIf="role === 'admin' || role === 'superadmin' || role === 'manager' || role === 'employee'" routerLink="/dashboard/categories" routerLinkActive="active">
+        <i class="bi bi-folder2-open"></i>
+        Categories
+      </a>
+
+      <a *ngIf="role === 'admin' || role === 'superadmin' || role === 'manager'" routerLink="/dashboard/suppliers" routerLinkActive="active">
+        <i class="bi bi-truck"></i>
+        Suppliers
+      </a>
+
+      <a *ngIf="role === 'admin' || role === 'superadmin' || role === 'manager'" routerLink="/dashboard/stock-movement" routerLinkActive="active">
+        <i class="bi bi-arrow-left-right"></i>
+        Stock Movement
+      </a>
+
+      <a *ngIf="role === 'admin' || role === 'superadmin' || role === 'manager'" routerLink="/dashboard/history" routerLinkActive="active">
+        <i class="bi bi-clock-history"></i>
+        History
+      </a>
+
+      <a *ngIf="role === 'admin' || role === 'superadmin' || role === 'manager' || role === 'employee'" routerLink="/dashboard/chatbot" routerLinkActive="active">
+        <i class="bi bi-robot"></i>
+        Chatbot
+      </a>
+
+      <a *ngIf="role === 'admin' || role === 'superadmin' || role === 'manager'" routerLink="/dashboard/reports" routerLinkActive="active">
+        <i class="bi bi-file-earmark-bar-graph"></i>
+        Reports
+      </a>
+
+      <!-- TASKS: Manager only -->
+      <a *ngIf="role === 'manager'" routerLink="/dashboard/tasks" routerLinkActive="active">
+        <i class="bi bi-list-check"></i>
+        Tasks
+      </a>
+
+      <!-- MY TASKS: Employee only -->
+      <a *ngIf="role === 'employee'" routerLink="/dashboard/my-tasks" routerLinkActive="active">
+        <i class="bi bi-list-check"></i>
+        My Tasks
+      </a>
+
+      <!-- TASK HISTORY: Admin and SuperAdmin -->
+      <a *ngIf="role === 'admin' || role === 'superadmin'" routerLink="/dashboard/task-history" routerLinkActive="active">
+        <i class="bi bi-clock-history"></i>
+        Task History
+      </a>
+
+      <!-- USERS PAGE: Admin and SuperAdmin -->
+      <a *ngIf="role === 'admin' || role === 'superadmin'" routerLink="/dashboard/users" routerLinkActive="active">
+        <i class="bi bi-people"></i>
+        Users
+      </a>
+
+      <!-- WAREHOUSES: SuperAdmin only -->
+      <a *ngIf="role === 'superadmin'" routerLink="/dashboard/warehouses" routerLinkActive="active">
+        <i class="bi bi-building"></i>
+        Warehouses
+      </a>
+
+      <a routerLink="/dashboard/profile" routerLinkActive="active">
+        <i class="bi bi-person-circle"></i>
+        profile
+      </a>
+
+      <a class="theme-toggle-link" (click)="toggleTheme($event)" style="cursor: pointer;">
+        <i class="bi" [ngClass]="isDarkMode ? 'bi-sun' : 'bi-moon-stars'"></i>
+        {{ isDarkMode ? 'Light Mode' : 'Dark Mode' }}
+      </a>
+
+      <a (click)="logout($event)" style="cursor: pointer;">
+        <i class="bi bi-box-arrow-right"></i>
+        Logout
+      </a>
+
+    </nav>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <router-outlet></router-outlet>
+  </div>
+
+  <!-- Low Stock Alert -->
+  <app-low-stock-alert></app-low-stock-alert>
+
+</div>

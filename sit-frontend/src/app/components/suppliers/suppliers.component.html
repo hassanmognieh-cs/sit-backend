@@ -1,0 +1,142 @@
+<div class="container">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <input
+      type="text"
+      placeholder="Search suppliers..."
+      class="search-bar"
+      [(ngModel)]="searchTerm"
+      (input)="applyFilter()"
+    />
+
+    <button
+      *ngIf="isAdmin"
+      class="btn-add"
+      data-bs-toggle="modal"
+      data-bs-target="#supplierModal"
+      (click)="openAddSupplier()"
+    >
+      <i class="bi bi-person-plus-fill"></i> Add Supplier
+    </button>
+  </div>
+
+  <!-- TABLE -->
+  <table class="styled-table">
+    <thead>
+      <tr>
+        <th style="width: 60px;">ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Address & Phone</th>
+        <th>Description</th>
+        <th *ngIf="isAdmin">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let s of filteredSuppliers; let i = index">
+        <td class="id-cell">{{ i + 1 }}</td>
+
+        <td><strong>{{ s.name }}</strong></td>
+
+        <td>{{ s.email || '—' }}</td>
+
+        <td class="address-col">
+          <div>{{ s.address || '—' }}</div>
+          <div class="subtext">{{ s.phone || '—' }}</div>
+        </td>
+
+        <td class="desc-col">
+          <div class="desc-text" [class.expanded]="s.expanded">
+            {{ s.description || '—' }}
+          </div>
+
+          <button
+            *ngIf="s.description?.length > 60"
+            class="toggle-desc"
+            (click)="s.expanded = !s.expanded"
+          >
+            {{ s.expanded ? 'Show less' : 'Show more' }}
+          </button>
+        </td>
+
+        <td *ngIf="isAdmin" class="action-col">
+          <span
+            class="icon-wrapper"
+            data-bs-toggle="modal"
+            data-bs-target="#supplierModal"
+            (click)="editSupplier(s)"
+          >
+            <i class="bi bi-pencil-square edit-icon"></i>
+            <span class="tooltip">Edit</span>
+          </span>
+
+          <span class="icon-wrapper" (click)="deleteSupplier(s.id)">
+            <i class="bi bi-trash-fill delete-icon"></i>
+            <span class="tooltip">Delete</span>
+          </span>
+        </td>
+
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+<!-- ============================= -->
+<!--      BOOTSTRAP MODAL         -->
+<!-- ============================= -->
+
+<div
+  class="modal fade"
+  id="supplierModal"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-box">
+
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ mode === 'add' ? 'Add Supplier' : 'Edit Supplier' }}
+        </h5>
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+
+        <label>Name</label>
+        <input type="text" [(ngModel)]="selectedSupplier.name" class="form-control"/>
+
+        <label>Email</label>
+        <input type="text" [(ngModel)]="selectedSupplier.email" class="form-control"/>
+
+        <label>Phone</label>
+        <input type="text" [(ngModel)]="selectedSupplier.phone" class="form-control"/>
+
+        <label>Address</label>
+        <input type="text" [(ngModel)]="selectedSupplier.address" class="form-control"/>
+
+        <label>Description</label>
+        <textarea [(ngModel)]="selectedSupplier.description" class="form-control"></textarea>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+
+        <button type="button" class="btn-save" (click)="saveSupplier()">
+          Save
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

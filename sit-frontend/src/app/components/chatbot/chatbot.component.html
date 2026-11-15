@@ -1,0 +1,51 @@
+<div class="chat-wrapper">
+
+  <div class="chat-header">
+    <i class="bi bi-robot"></i>
+    Smart Inventory Assistant
+  </div>
+
+  <div class="chat-body" #chatBody>
+    <div *ngFor="let msg of messages" [ngClass]="msg.sender">
+      <div class="bubble">
+        {{ msg.text }}
+      </div>
+    </div>
+
+    <div *ngIf="isLoading" class="bot typing">
+      <div class="bubble typing-bubble">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suggested questions — outside chat-body so they don't scroll -->
+  <div *ngIf="showRecommendations" class="recommendations-container">
+    <p class="recommendations-title">Suggested questions:</p>
+    <div class="recommendations-grid">
+      <button
+        *ngFor="let question of questionRecommendations"
+        class="recommendation-chip"
+        (click)="selectRecommendation(question)">
+        {{ question }}
+      </button>
+    </div>
+  </div>
+
+  <div class="chat-footer">
+    <input
+      type="text"
+      class="input"
+      placeholder="Ask me anything about your inventory..."
+      [(ngModel)]="userInput"
+      (keyup.enter)="sendMessage()"
+    >
+
+    <button class="send-btn" (click)="sendMessage()">
+      <i class="bi bi-send-fill"></i>
+    </button>
+  </div>
+
+</div>

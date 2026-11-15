@@ -1,0 +1,78 @@
+<div class="tasks-container">
+  <div class="tasks-header">
+    <h2>My Tasks</h2>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-section">
+    <label>Filter by Status:</label>
+    <select [(ngModel)]="statusFilter" (change)="onFilterChange()" class="filter-select">
+      <option value="All">All</option>
+      <option value="Pending">Pending</option>
+      <option value="Taken">Taken</option>
+      <option value="Done">Done</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading">Loading tasks...</div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="error-banner">
+    <i class="bi bi-exclamation-triangle"></i>
+    {{ error }}
+  </div>
+
+  <!-- Tasks List -->
+  <div class="tasks-list">
+    <div *ngFor="let task of filteredTasks" class="task-card">
+      <div class="task-header">
+        <h3>{{ task.title }}</h3>
+        <span class="task-status" [class]="getStatusClass(task.status)">
+          {{ task.status || 'Pending' }}
+        </span>
+      </div>
+      
+      <div class="task-body">
+        <p *ngIf="task.description" class="task-description">{{ task.description }}</p>
+        <div class="task-info">
+          <div class="info-item">
+            <i class="bi bi-person"></i>
+            <span>Assigned by: {{ task.createdByName }}</span>
+          </div>
+          <div class="info-item" *ngIf="task.dueDate">
+            <i class="bi bi-calendar-event"></i>
+            <span>Due: {{ task.dueDate | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="info-item">
+            <i class="bi bi-clock"></i>
+            <span>Created: {{ task.createdAt | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="task-actions">
+        <button 
+          *ngIf="canTakeTask(task)" 
+          class="btn-taken" 
+          (click)="markAsTaken(task)"
+          [disabled]="loading">
+          <i class="bi bi-check-circle"></i> Mark as Taken
+        </button>
+        <button 
+          *ngIf="canMarkDone(task)" 
+          class="btn-done" 
+          (click)="markAsDone(task)"
+          [disabled]="loading">
+          <i class="bi bi-check2-circle"></i> Mark as Done
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="filteredTasks.length === 0 && !loading" class="no-tasks">
+      <i class="bi bi-inbox"></i>
+      <p>No tasks assigned to you</p>
+    </div>
+  </div>
+</div>
+

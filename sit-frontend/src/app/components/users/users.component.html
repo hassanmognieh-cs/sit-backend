@@ -1,0 +1,157 @@
+<div class="container-fluid mt-4" *ngIf="isAdmin || isSuperAdmin">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <input
+      type="text"
+      placeholder="Search users..."
+      class="search-input"
+      [(ngModel)]="searchTerm"
+      (input)="applyFilter()"
+    />
+
+    <select class="role-filter-select" [(ngModel)]="roleFilter" (change)="onRoleFilterChange()">
+      <option value="all">All Roles</option>
+      <option value="manager">Managers</option>
+      <option value="employee">Employees</option>
+      <option *ngIf="isSuperAdmin" value="admin">Admins</option>
+    </select>
+
+    <button class="btn-add" (click)="openAddUser()">
+      <i class="bi bi-person-plus-fill"></i> Add User
+    </button>
+  </div>
+
+  <!-- USERS TABLE -->
+  <div class="table-wrapper fade-in">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let u of filteredUsers">
+          <td>{{ u.name || '—' }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.role }}</td>
+          <td>
+            <span class="status-pill" [class.disabled]="(u.status || 'active') === 'disabled'">
+              {{ (u.status || 'active') === 'disabled' ? 'disabled' : 'active' }}
+            </span>
+          </td>
+
+          <td class="action-col">
+
+            <!-- EDIT -->
+            <span class="action-icon edit" (click)="openEditUser(u)">
+              <i class="bi bi-pencil-square"></i>
+              <span class="tooltip">Edit</span>
+            </span>
+
+            <!-- STATUS TOGGLE -->
+            <span class="action-icon" (click)="toggleStatus(u)">
+              <i class="bi" [class.bi-toggle-on]="(u.status || 'active') === 'active'" [class.bi-toggle-off]="(u.status || 'active') === 'disabled'"></i>
+              <span class="tooltip">{{ (u.status || 'active') === 'active' ? 'Disable' : 'Activate' }}</span>
+            </span>
+
+            <!-- DELETE -->
+            <span class="action-icon delete" (click)="deleteUser(u)">
+              <i class="bi bi-trash-fill"></i>
+              <span class="tooltip">Delete</span>
+            </span>
+
+          </td>
+        </tr>
+        <tr *ngIf="filteredUsers.length === 0">
+          <td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted); font-size: 13px;">
+            <i class="bi bi-people" style="font-size:24px; display:block; margin-bottom:8px; opacity:0.5;"></i>
+            No users found. Check Firestore permissions or add users first.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- BACKDROP -->
+  <div class="modal-backdrop-custom" *ngIf="showModal"></div>
+
+  <!-- MODAL -->
+  <div class="custom-modal fade-in" *ngIf="showModal">
+    <div class="modal-content-custom">
+
+      <!-- TITLE -->
+      <h4 class="modal-title">
+        {{ mode === 'add' ? 'Add User' : 'Edit User' }}
+      </h4>
+
+      <!-- NAME -->
+      <label>Name</label>
+      <input
+        type="text"
+        class="form-control-custom"
+        [(ngModel)]="name"
+        placeholder="Enter name"
+      />
+
+      <!-- EMAIL -->
+      <label>Email</label>
+      <input
+        type="text"
+        class="form-control-custom"
+        [(ngModel)]="email"
+      />
+
+      <!-- ROLE -->
+      <label>Role</label>
+      <select class="form-control-custom" [(ngModel)]="role">
+        <option value="employee">Employee</option>
+        <option value="manager">Manager</option>
+        <option *ngIf="isSuperAdmin" value="admin">Admin</option>
+      </select>
+
+      <!-- ERROR -->
+      <div *ngIf="errorMessage" class="error-box">
+        {{ errorMessage }}
+      </div>
+
+      <!-- BUTTONS -->
+      <div class="modal-buttons">
+        <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+        <button class="btn-save" (click)="submitForm()">Save</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PASSWORD DISPLAY MODAL -->
+  <div class="modal-backdrop-custom" *ngIf="showPasswordModal"></div>
+  <div class="custom-modal fade-in" *ngIf="showPasswordModal">
+    <div class="modal-content-custom">
+      <h4 class="modal-title">User Created Successfully</h4>
+      
+      <div class="password-display-box">
+        <label style="color: #e74c3c; font-weight: 600; margin-bottom: 8px;">
+          <i class="bi bi-shield-exclamation"></i> Temporary Password
+        </label>
+        <div class="generated-password">
+          {{ generatedPassword }}
+        </div>
+        <p class="password-warning">
+          <i class="bi bi-exclamation-triangle"></i>
+          This is a temporary password. User must change it on first login.
+        </p>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn-save" (click)="closePasswordModal()">OK</button>
+      </div>
+    </div>
+  </div>
+
+</div>

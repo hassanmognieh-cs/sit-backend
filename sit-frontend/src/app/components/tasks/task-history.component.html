@@ -1,0 +1,105 @@
+<div class="task-page">
+  <div class="task-page-header">
+    <h1 class="task-title">Task History</h1>
+    <p class="task-sub">Last 30 days · {{ tasks.length }} total tasks</p>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading">Loading task history...</div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+
+  <!-- Timeline -->
+  <div class="task-timeline" *ngIf="!loading && tasks.length > 0">
+
+    <!-- Recent date groups (last 30 days) -->
+    <div class="date-group" *ngFor="let dateKey of recentDates">
+      <div class="date-header" (click)="toggleDate(dateKey)">
+        <div class="date-header-left">
+          <i class="bi bi-calendar3"></i>
+          <span class="date-label">{{ formatDisplayDate(dateKey) }}</span>
+          <span class="task-count-badge">{{ groupedTasks[dateKey].length }}</span>
+        </div>
+        <i class="bi" [ngClass]="isExpanded(dateKey) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+      </div>
+
+      <div class="task-list" *ngIf="isExpanded(dateKey)">
+        <div class="task-row" *ngFor="let task of groupedTasks[dateKey]">
+          <div class="task-row-left">
+            <div class="task-status-dot" [ngClass]="'dot-' + getStatusClass(task.status)"></div>
+          </div>
+          <div class="task-row-content">
+            <div class="task-row-top">
+              <span class="task-row-title">{{ task.title }}</span>
+              <span class="task-status-badge" [ngClass]="'badge-' + getStatusClass(task.status)">
+                {{ getStatusDisplay(task.status) }}
+              </span>
+            </div>
+            <div class="task-row-meta">
+              <span class="task-assigner">{{ task.createdByName }}</span>
+              <span class="meta-sep">→</span>
+              <span class="task-assignee">{{ getEmployeeName(task.assignedToEmail) }}</span>
+            </div>
+            <div class="task-row-desc" *ngIf="task.description">
+              {{ task.description }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Older tasks (beyond 30 days) -->
+    <ng-container *ngIf="showOlderTasks">
+      <div class="date-group" *ngFor="let dateKey of olderDates">
+        <div class="date-header" (click)="toggleDate(dateKey)">
+          <div class="date-header-left">
+            <i class="bi bi-calendar3"></i>
+            <span class="date-label">{{ formatDisplayDate(dateKey) }}</span>
+            <span class="task-count-badge">{{ groupedTasks[dateKey].length }}</span>
+          </div>
+          <i class="bi" [ngClass]="isExpanded(dateKey) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+        </div>
+
+        <div class="task-list" *ngIf="isExpanded(dateKey)">
+          <div class="task-row" *ngFor="let task of groupedTasks[dateKey]">
+            <div class="task-row-left">
+              <div class="task-status-dot" [ngClass]="'dot-' + getStatusClass(task.status)"></div>
+            </div>
+            <div class="task-row-content">
+              <div class="task-row-top">
+                <span class="task-row-title">{{ task.title }}</span>
+                <span class="task-status-badge" [ngClass]="'badge-' + getStatusClass(task.status)">
+                  {{ getStatusDisplay(task.status) }}
+                </span>
+              </div>
+              <div class="task-row-meta">
+                <span class="task-assigner">{{ task.createdByName }}</span>
+                <span class="meta-sep">→</span>
+                <span class="task-assignee">{{ getEmployeeName(task.assignedToEmail) }}</span>
+              </div>
+              <div class="task-row-desc" *ngIf="task.description">
+                {{ task.description }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+
+  <!-- Older tasks button -->
+  <div class="older-tasks-row" *ngIf="olderTasksCount > 0 && !showOlderTasks && !loading">
+    <button class="older-btn" (click)="showOlderTasks = true">
+      <i class="bi bi-clock-history"></i>
+      Show {{ olderTasksCount }} older tasks
+    </button>
+  </div>
+
+  <!-- No tasks at all -->
+  <div *ngIf="!loading && tasks.length === 0 && !error" class="no-history">
+    <i class="bi bi-inbox"></i>
+    <p>No task history found</p>
+  </div>
+</div>

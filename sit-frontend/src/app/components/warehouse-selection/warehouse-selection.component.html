@@ -1,0 +1,185 @@
+<div class="warehouse-selection-page">
+  <div class="ws-backdrop"></div>
+
+  <div class="ws-content">
+    <div class="ws-header">
+      <h1 class="ws-title">Select warehouse to continue</h1>
+      <p class="ws-subtitle">
+        Choose where you want to work today. You can always switch later from the dashboard.
+      </p>
+    </div>
+
+    <div *ngIf="errorMessage && !loading" class="ws-error">
+      {{ errorMessage }}
+    </div>
+
+    <div class="ws-grid" [class.ws-grid-loading]="loading">
+      <!-- Main warehouse card -->
+      <button
+        class="ws-card"
+        [class.selected]="selectedWarehouseId === 'main'"
+        (click)="selectedWarehouseId = 'main'"
+      >
+        <div class="ws-card-icon main">
+          <i class="bi bi-house-door"></i>
+        </div>
+        <h3 class="ws-card-title">Main Warehouse</h3>
+        <p class="ws-card-subtitle">Beirut, Al Hamra</p>
+        <div class="ws-check" *ngIf="selectedWarehouseId === 'main'">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+      </button>
+
+      <!-- Other warehouses -->
+      <div
+        *ngFor="let warehouse of warehouses"
+        class="ws-card-wrapper"
+      >
+        <button
+          class="ws-card"
+          [class.selected]="selectedWarehouseId === warehouse.id"
+          (click)="selectedWarehouseId = warehouse.id || ''"
+        >
+          <div class="ws-card-icon">
+            <i class="bi bi-building"></i>
+          </div>
+          <h3 class="ws-card-title">{{ warehouse.name }}</h3>
+          <p class="ws-card-subtitle">
+            {{ warehouse.city || 'No city' }} • {{ warehouse.address || 'No address' }}
+          </p>
+          <span class="ws-chip secondary">Warehouse</span>
+          <div class="ws-check" *ngIf="selectedWarehouseId === warehouse.id">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+        </button>
+        <!-- Delete button (only for superadmin) -->
+        <button
+          *ngIf="isSuperAdmin"
+          class="ws-delete-btn"
+          (click)="deleteWarehouse(warehouse, $event)"
+          title="Delete warehouse"
+        >
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+
+      <!-- Add new warehouse -->
+      <button class="ws-card ws-card-add" (click)="openAddWarehouseModal()">
+        <div class="ws-card-icon add">
+          <i class="bi bi-plus-lg"></i>
+        </div>
+        <h3 class="ws-card-title">Add new warehouse</h3>
+        <p class="ws-card-subtitle">
+          Create a new warehouse and assign an admin to manage it.
+        </p>
+      </button>
+    </div>
+
+    <div class="ws-footer">
+      <button
+        class="ws-btn-primary"
+        (click)="selectWarehouse()"
+        [disabled]="!selectedWarehouseId || loading"
+      >
+        <span *ngIf="!loading">Continue</span>
+        <span *ngIf="loading">Loading...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Warehouse Modal -->
+<div class="modal-backdrop fade show" *ngIf="showAddModal" (click)="closeAddModal()"></div>
+<div class="custom-modal fade-in" *ngIf="showAddModal" style="width: 500px; z-index: 1050;" (click)="$event.stopPropagation()">
+  <div class="modal-content-custom">
+
+    <!-- TITLE -->
+    <h4 class="modal-title">Add Warehouse</h4>
+
+    <!-- NAME -->
+    <label>Name</label>
+    <input
+      type="text"
+      class="form-control-custom"
+      [(ngModel)]="name"
+      placeholder="Enter warehouse name"
+      autocomplete="off"
+    />
+
+    <!-- CITY SELECTION -->
+    <label>City</label>
+    <select 
+      class="form-control-custom" 
+      [(ngModel)]="city"
+      (change)="onCityChange()"
+    >
+      <option value="">— Select City —</option>
+      <option *ngFor="let cityData of lebanonCities" [value]="cityData.name">
+        {{ cityData.name }}
+      </option>
+    </select>
+
+            <!-- ADDRESS -->
+            <label>Address</label>
+            <input
+              type="text"
+              class="form-control-custom"
+              [(ngModel)]="address"
+              placeholder="Enter address"
+              autocomplete="off"
+            />
+
+    <!-- COORDINATES (Read-only, set from map) -->
+    <label>Coordinates (Select on Map)</label>
+    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+      <input
+        type="text"
+        class="form-control-custom"
+        [value]="latitude ? latitude.toFixed(6) : 'Not selected'"
+        placeholder="Latitude"
+        readonly
+        style="flex: 1; background: #f0f0f0; cursor: not-allowed;"
+      />
+      <input
+        type="text"
+        class="form-control-custom"
+        [value]="longitude ? longitude.toFixed(6) : 'Not selected'"
+        placeholder="Longitude"
+        readonly
+        style="flex: 1; background: #f0f0f0; cursor: not-allowed;"
+      />
+    </div>
+    <button 
+      type="button" 
+      class="btn-map" 
+      (click)="openMapForCoordinates()"
+      [disabled]="!city"
+    >
+      <i class="bi bi-geo-alt"></i> Select on Map
+    </button>
+    <small *ngIf="!city" style="color: #666; display: block; margin-top: 5px;">
+      Please select a city first
+    </small>
+
+    <!-- ASSIGNED ADMIN -->
+    <label>Assigned Admin</label>
+    <select class="form-control-custom" [(ngModel)]="adminId">
+      <option value="">— None —</option>
+      <option *ngFor="let admin of allAdmins" [value]="admin.uid">
+        {{ admin.name || admin.email }}
+      </option>
+    </select>
+
+    <!-- ERROR -->
+    <div *ngIf="formErrorMessage" class="error-box">
+      {{ formErrorMessage }}
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="modal-buttons">
+      <button class="btn-cancel" (click)="closeAddModal()">Cancel</button>
+      <button class="btn-save" (click)="submitWarehouseForm()">Save</button>
+    </div>
+
+  </div>
+</div>

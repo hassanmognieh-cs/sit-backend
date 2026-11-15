@@ -1,0 +1,73 @@
+<div class="container mt-4">
+
+  <!-- SEARCH + ADD BUTTON -->
+  <div class="top-bar">
+
+    <input
+      type="text"
+      placeholder="Search categories..."
+      class="search-bar"
+      [(ngModel)]="searchTerm"
+      (input)="applyFilter()"
+    >
+
+    <button
+      *ngIf="role === 'admin'"
+      class="btn-add"
+      (click)="openAddCategory()"
+    >
+      <i class="bi bi-person-plus-fill"></i> Add Category
+    </button>
+  </div>
+
+  <!-- Category Form Modal -->
+  <app-category-form
+    *ngIf="showModal"
+    [mode]="mode"
+    [categoryData]="selectedCategory"
+    (formSubmit)="handleFormSubmit($event)"
+    (formCancel)="closeModal()">
+  </app-category-form>
+
+  <div class="modal-backdrop fade show" *ngIf="showModal"></div>
+
+  <!-- MATCHED TABLE STYLE -->
+  <table class="styled-table">
+    <thead>
+      <tr>
+        <th style="width: 60px;">ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th *ngIf="role === 'admin'" class="actions-header">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let category of filteredCategories; let i = index">
+        <td class="id-cell">{{ i + 1 }}</td>
+
+        <td>{{ category.name }}</td>
+        <td>{{ category.description || '—' }}</td>
+
+        <td *ngIf="role === 'admin'" class="action-col">
+
+          <span
+            class="icon-wrapper"
+            (click)="editCategory(category)"
+          >
+            <i class="bi bi-pencil-square edit-icon"></i>
+            <span class="tooltip">Edit</span>
+          </span>
+
+          <span class="icon-wrapper" (click)="deleteCategory(category.id)">
+            <i class="bi bi-trash-fill delete-icon"></i>
+            <span class="tooltip">Delete</span>
+          </span>
+
+        </td>
+
+      </tr>
+    </tbody>
+  </table>
+
+</div>

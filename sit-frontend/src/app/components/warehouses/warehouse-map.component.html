@@ -1,0 +1,33 @@
+<div class="container-fluid mt-4" *ngIf="isSuperAdmin">
+
+  <div class="map-header">
+    <h3 *ngIf="!selectionMode">Warehouse Map</h3>
+    <h3 *ngIf="selectionMode">Select Warehouse Location</h3>
+    
+    <div *ngIf="selectionMode" class="selection-controls">
+      <div class="coords-display">
+        <strong>Selected:</strong> 
+        <span *ngIf="selectedLat && selectedLng">
+          {{ selectedLat.toFixed(6) }}, {{ selectedLng.toFixed(6) }}
+        </span>
+        <span *ngIf="!selectedLat || !selectedLng" class="no-selection">
+          Click on the map to select coordinates
+        </span>
+      </div>
+      <div class="button-group">
+        <button class="btn-cancel" (click)="cancelSelection()">Cancel</button>
+        <button class="btn-confirm" (click)="confirmSelection()" [disabled]="!selectedLat || !selectedLng">
+          Confirm Selection
+        </button>
+      </div>
+    </div>
+    
+    <button *ngIf="!selectionMode" class="btn-back" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i> Back to List
+    </button>
+  </div>
+
+  <div id="warehouse-map" class="map-container"></div>
+
+</div>
+

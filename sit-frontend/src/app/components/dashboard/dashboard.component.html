@@ -1,0 +1,319 @@
+<div class="dashboard-wrapper">
+  <!-- Top bar -->
+  <div class="top-bar d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="welcome-text">Welcome, {{ isAdmin ? 'Admin' : isManager ? 'Manager' : isEmployee ? 'Employee' : 'User' }}!</h2>
+      <p class="subtitle">Here is a quick overview of your inventory status.</p>
+    </div>
+    <div class="top-bar-actions">
+      <button class="alerts-button" (click)="toggleAlertsPanel()" [class.has-alerts]="alertMessages.length > 0" title="View Alerts">
+        <i class="bi bi-bell-fill"></i>
+        <span class="alert-badge" *ngIf="alertMessages.length > 0">{{ alertMessages.length }}</span>
+      </button>
+      <span class="role-pill" (click)="goToProfile()" style="cursor: pointer;">
+        {{ isAdmin ? 'Admin' : isManager ? 'Manager' : isEmployee ? 'Employee' : 'User' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Alerts Panel -->
+  <div class="alerts-panel" *ngIf="showAlertsPanel" (click)="$event.stopPropagation()">
+    <div class="alerts-panel-header">
+      <h4>Alerts</h4>
+      <button class="btn-close-alerts" (click)="closeAlertsPanel()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="alerts-panel-body">
+      <div *ngIf="alertMessages.length === 0" class="no-alerts">
+        <i class="bi bi-check-circle-fill"></i>
+        <p>No alerts at this time</p>
+      </div>
+      <div *ngFor="let alert of alertMessages" class="alert-item"
+        [ngClass]="{
+          'alert-low-stock': alert.type === 'lowStock',
+          'alert-out-of-stock': alert.type === 'outOfStock',
+          'alert-expired': alert.type === 'expired'
+        }">
+        <div class="alert-item-icon">
+          <i [class]="'bi ' + getAlertIcon(alert.type)"></i>
+        </div>
+        <div class="alert-item-content">
+          <div class="alert-item-header">
+            <span class="alert-type-label">{{ alert.title }}</span>
+            <button class="btn-delete-alert" (click)="deleteAlertMessage(alert.id)" title="Dismiss">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          <p class="alert-item-message">{{ alert.message }}</p>
+          <div class="alert-item-actions" *ngIf="alert.product">
+            <button class="btn-alert-action btn-email" *ngIf="!isEmployee" (click)="sendEmailToSupplier(alert)" title="Email Supplier">
+              <i class="bi bi-envelope"></i> Email
+            </button>
+            <button class="btn-alert-action btn-view" (click)="viewProductInTable(alert)" title="View in Table">
+              <i class="bi bi-table"></i> View
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Backdrop for alerts panel -->
+  <div class="alerts-backdrop" *ngIf="showAlertsPanel" (click)="closeAlertsPanel()"></div>
+
+  <!-- Quick Actions Bar -->
+  <div class="quick-actions">
+    <a class="qa-btn primary" routerLink="/dashboard/products">
+      <i class="bi bi-plus-lg"></i> Add Product
+    </a>
+    <a class="qa-btn" routerLink="/dashboard/stock-movement">
+      <i class="bi bi-arrow-left-right"></i> Record Movement
+    </a>
+    <a class="qa-btn" routerLink="/dashboard/products">
+      <i class="bi bi-clock"></i> View Expiring Soon
+    </a>
+    <a class="qa-btn" routerLink="/dashboard/reports">
+      <i class="bi bi-file-earmark-bar-graph"></i> Generate Report
+    </a>
+  </div>
+
+  <!-- Overview Cards - New Design -->
+  <div class="overview-cards">
+    <!-- Total Products -->
+    <div class="overview-card stat-products" (click)="onCardClick('products')">
+      <div class="card-icon-wrapper">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="card-info">
+        <div class="card-number">{{ totalProducts }}</div>
+        <div class="card-label">Total Products</div>
+      </div>
+    </div>
+
+    <!-- Total Stock -->
+    <div class="overview-card stat-stock">
+      <div class="card-icon-wrapper">
+        <i class="bi bi-graph-up-arrow"></i>
+      </div>
+      <div class="card-info">
+        <div class="card-number">{{ totalStockQuantity }}</div>
+        <div class="card-label">Total Stock</div>
+      </div>
+    </div>
+
+    <!-- Out of Stock -->
+    <div class="overview-card stat-outofstock" (click)="onCardClick('outOfStock')">
+      <div class="card-icon-wrapper">
+        <i class="bi bi-x-circle"></i>
+      </div>
+      <div class="card-info">
+        <div class="card-number">{{ outOfStockCount }}</div>
+        <div class="card-label">Out of Stock</div>
+      </div>
+    </div>
+
+    <!-- Expired Products -->
+    <div class="overview-card stat-expired" (click)="onCardClick('expired')">
+      <div class="card-icon-wrapper">
+        <i class="bi bi-trash2"></i>
+      </div>
+      <div class="card-info">
+        <div class="card-number">{{ expiredProductsCount }}</div>
+        <div class="card-label">Expired Products</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mid Section: Stock by Category + System Overview -->
+  <div class="mid-section">
+    <!-- Left: Stock by Category Bar Chart -->
+    <div class="dash-panel">
+      <div class="panel-title">Stock by Category</div>
+      <div class="category-chart-wrapper">
+        <canvas #categoryChart id="categoryChart"></canvas>
+      </div>
+      <div *ngIf="categoryStockData.length === 0" class="panel-empty">No category data</div>
+    </div>
+
+    <!-- Right: System Overview (existing donut) -->
+    <div class="dash-panel">
+      <div class="panel-title">System Overview</div>
+      <div class="chart-wrapper">
+        <canvas #overviewChart id="overviewChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock / Expiring Table -->
+  <div class="chart-table-section" style="grid-template-columns:1fr; margin-top:16px;">
+    <div class="table-container">
+      <div class="table-header">
+        <select class="filter-select" [(ngModel)]="tableFilter" (change)="onTableFilterChange()">
+          <option value="lowStock">Low Stock Products</option>
+          <option value="expiringSoon">Will Expire Soon Products</option>
+        </select>
+      </div>
+      <table class="low-stock-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Stock</th>
+            <th>Threshold</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of filteredLowStockProducts">
+            <td>{{ p.name }}</td>
+            <td>{{ p.categoryName }}</td>
+            <td [ngClass]="{
+              'stock-critical': p.stockQuantity === 0,
+              'stock-low': p.stockQuantity > 0 && p.stockQuantity <= p.threshold
+            }">{{ p.stockQuantity }}</td>
+            <td>{{ p.threshold }}</td>
+          </tr>
+          <tr *ngIf="filteredLowStockProducts.length === 0">
+            <td colspan="4" class="no-items">No items found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bottom Section: Expiry Timeline + Recent Activity -->
+  <div class="bottom-section">
+    <!-- Left: Expiry Timeline -->
+    <div class="dash-panel">
+      <div class="panel-title">Expiry Timeline</div>
+      <div *ngIf="expiringProducts.length === 0" class="panel-empty">No products with expiry dates</div>
+      <div class="expiry-row" *ngFor="let p of expiringProducts">
+        <div>
+          <div class="expiry-name">{{ p.name }}</div>
+          <div class="expiry-sub">{{ p.categoryName }} · {{ p.supplierName }}</div>
+        </div>
+        <span class="expiry-badge"
+          [ngClass]="{
+            'badge-red': getExpiryStatus(p.expiryDate) === 'expired',
+            'badge-amber': getExpiryStatus(p.expiryDate) === 'soon',
+            'badge-green': getExpiryStatus(p.expiryDate) === 'ok'
+          }">
+          {{ getExpiryStatus(p.expiryDate) === 'expired' ? 'Expired' : 'Expires ' + formatExpiryLabel(p.expiryDate) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Right: Recent Activity -->
+    <div class="dash-panel">
+      <div class="panel-title">Recent Activity</div>
+      <div *ngIf="recentActivity.length === 0" class="panel-empty">No recent activity</div>
+      <div class="activity-item" *ngFor="let item of recentActivity">
+        <div class="act-dot" [style.background]="getActivityColor(item.type)"></div>
+        <div>
+          <div class="act-text">
+            <strong>{{ item.productName }}</strong>
+            — {{ item.type === 'IN' ? 'Restocked' : 'Removed' }} {{ item.quantity }} units
+          </div>
+          <div class="act-time">{{ formatActivityTime(item.createdAt) }} · {{ item.reason || '—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Chatbot Button -->
+  <button class="floating-chatbot-btn" (click)="goToChatbot()" title="Open Chatbot">
+    <i class="bi bi-robot"></i>
+  </button>
+
+  <!-- MODALS -->
+
+  <!-- Backdrop -->
+  <div class="modal-backdrop fade show" *ngIf="activeModal"></div>
+
+  <!-- Out of Stock modal -->
+  <div class="modal fade show d-block dashboard-modal" *ngIf="activeModal === 'outOfStock'">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Out of Stock Products</h5>
+          <button type="button" class="btn-close" (click)="closeModal()"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Stock</th>
+                <th>Threshold</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of outOfStockProducts">
+                <td>{{ p.name }}</td>
+                <td>{{ p.categoryName }}</td>
+                <td class="text-danger"><strong>{{ p.stockQuantity }}</strong></td>
+                <td>{{ p.threshold }}</td>
+                <td class="text-end">
+                  <button class="btn btn-outline-primary btn-sm" (click)="viewSpecificProduct(p)">View</button>
+                </td>
+              </tr>
+              <tr *ngIf="outOfStockProducts.length === 0">
+                <td colspan="5" class="text-center text-muted">No out of stock products 🎉</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+          <button class="btn btn-primary" (click)="goToProducts()">Go to Products</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expired products modal -->
+  <div class="modal fade show d-block dashboard-modal" *ngIf="activeModal === 'expired'">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Expired Products</h5>
+          <button type="button" class="btn-close" (click)="closeModal()"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Expiry Date</th>
+                <th>Stock</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of expiredProducts">
+                <td>{{ p.name }}</td>
+                <td>{{ p.categoryName }}</td>
+                <td>{{ p.expiryDate | date:'dd/MM/yyyy' }}</td>
+                <td>{{ p.stockQuantity }}</td>
+                <td class="text-end">
+                  <button class="btn btn-outline-primary btn-sm" (click)="viewSpecificProduct(p)">View</button>
+                </td>
+              </tr>
+              <tr *ngIf="expiredProducts.length === 0">
+                <td colspan="5" class="text-center text-muted">No expired products 🎉</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()">Close</button>
+          <button class="btn btn-primary" (click)="goToProducts()">Go to Products</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
